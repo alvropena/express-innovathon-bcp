@@ -1,35 +1,33 @@
 import express, { Request, Response } from "express";
-import axios from "axios";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
+import cors from "cors";
+import OpenAI from "openai";
+
 dotenv.config();
 
-// Now you can use your API key as follows:
-const openaiApiKey = process.env.OPENAI_API_KEY;
+const openai = new OpenAI({
+  apiKey: "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",
+});
 
 const app = express();
 app.use(bodyParser.json());
+app.use(cors());
 
 app.post("/api/chat", async (req: Request, res: Response) => {
   try {
     const userMessage: string = req.body.message;
 
-    const openaiResponse = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        prompt: userMessage,
-        max_tokens: 100,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${openaiApiKey}`,
-        },
-      }
-    );
+    const openaiResponse = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {role: "system", content: "You are a helpful assistant."},
+        {role: "user", content: userMessage}
+      ],
+      max_tokens: 100,
+    });    
 
-    const systemMessage: string = openaiResponse.data.choices[0].text.trim();
-
-    res.json({ answer: systemMessage });
+    res.json({ answer: openaiResponse.choices[0].message.content });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).send("Internal Server Error");
